@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- CONFIGURATION ---
-const BOARD_PASSWORD = "1234"; // Change this password
-
 // --- STYLES (CSS-in-JS) ---
 const styles = {
   container: {
@@ -15,18 +12,20 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
   },
+  header: {
+    textAlign: 'center',
+    marginBottom: '40px',
+  },
   title: {
     fontSize: '2.5rem',
     fontWeight: '800',
     color: '#1a1a1a',
     marginBottom: '8px',
-    textAlign: 'center',
   },
   subtitle: {
     color: '#666',
-    marginBottom: '40px',
-    textAlign: 'center',
   },
+  // Form Area
   inputCard: {
     width: '100%',
     maxWidth: '500px',
@@ -74,18 +73,16 @@ const styles = {
     outline: 'none',
     cursor: 'pointer',
   },
-  button: {
+  mainButton: {
     width: '100%',
     padding: '14px',
-    backgroundColor: '#000',
+    backgroundColor: '#111',
     color: '#fff',
     border: 'none',
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
-    position: 'relative',
-    overflow: 'hidden',
   },
   error: {
     color: '#ff4757',
@@ -94,13 +91,15 @@ const styles = {
     textAlign: 'center',
     fontWeight: '500',
   },
+  // Grid Area
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
     gap: '20px',
     width: '100%',
     maxWidth: '1000px',
   },
+  // Card Component
   card: {
     backgroundColor: '#ffffff',
     borderRadius: '16px',
@@ -109,91 +108,77 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    minHeight: '160px',
+    minHeight: '180px',
+    position: 'relative',
+    overflow: 'hidden',
   },
-  cardText: {
-    fontSize: '16px',
-    lineHeight: '1.5',
-    color: '#333',
-    whiteSpace: 'pre-wrap',
-    marginBottom: '20px',
-  },
-  cardMeta: {
-    borderTop: '1px solid #f0f0f0',
-    paddingTop: '12px',
+  cardHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: '15px',
     fontSize: '12px',
-    color: '#999',
+    color: '#888',
+    fontFamily: 'monospace',
+  },
+  lockedContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    gap: '10px',
+    textAlign: 'center',
+  },
+  unlockInput: {
+    padding: '10px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    width: '80%',
+    textAlign: 'center',
+    fontSize: '14px',
+  },
+  unlockBtn: {
+    padding: '8px 16px',
+    backgroundColor: '#007aff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600',
+  },
+  messageText: {
+    fontSize: '16px',
+    lineHeight: '1.6',
+    color: '#333',
+    whiteSpace: 'pre-wrap',
   },
   badge: {
-    backgroundColor: '#fff0f3',
-    color: '#ff4757',
+    backgroundColor: '#f0f0f0',
     padding: '4px 8px',
-    borderRadius: '6px',
-    fontWeight: '600',
+    borderRadius: '4px',
     fontSize: '11px',
+    fontWeight: 'bold',
+    color: '#555',
   }
 };
 
-export default function App() {
-  const [posts, setPosts] = useState([]);
-  const [message, setMessage] = useState('');
-  const [duration, setDuration] = useState('5');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+// --- SUB-COMPONENT: Message Card ---
+// We separate this so each card handles its own password input state
+const MessageCard = ({ post, onDelete }) => {
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [inputPwd, setInputPwd] = useState("");
+  const [shake, setShake] = useState(0);
 
-  // Load from local storage on mount
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('framerBoardPosts')) || [];
-    setPosts(saved);
-  }, []);
-
-  // Save and prune expired posts
-  useEffect(() => {
-    localStorage.setItem('framerBoardPosts', JSON.stringify(posts));
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      setPosts((current) => current.filter((p) => p.expiry > now));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [posts]);
-
-  // Force tick for UI countdown updates
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const handlePost = () => {
-    setError('');
-    
-    if (!message.trim()) {
-      setError("Please write a message first.");
-      return;
+  const handleUnlock = () => {
+    if (inputPwd === post.password) {
+      setIsUnlocked(true);
+    } else {
+      // Trigger shake animation
+      setShake(prev => prev + 1);
+      setInputPwd("");
     }
-    if (password !== BOARD_PASSWORD) {
-      setError("Incorrect password.");
-      return;
-    }
-
-    const now = Date.now();
-    const expiry = now + parseInt(duration) * 60 * 1000;
-
-    const newPost = {
-      id: now,
-      text: message,
-      postedAt: now,
-      expiry: expiry,
-    };
-
-    setPosts([newPost, ...posts]);
-    setMessage('');
-    setPassword('');
   };
 
   const getRemainingTime = (expiry) => {
@@ -204,26 +189,166 @@ export default function App() {
   };
 
   return (
+    <motion.div
+      layout
+      style={styles.card}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ 
+        opacity: 1, 
+        scale: 1,
+        x: shake % 2 === 0 ? 0 : [0, -10, 10, -10, 10, 0] // Shake effect
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      {/* Header with ID and Timer */}
+      <div style={styles.cardHeader}>
+        <span>ID: #{post.id.slice(-6)}</span>
+        <motion.span 
+          style={styles.badge}
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          {getRemainingTime(post.expiry)}
+        </motion.span>
+      </div>
+
+      <AnimatePresence mode='wait'>
+        {!isUnlocked ? (
+          <motion.div 
+            key="locked"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={styles.lockedContent}
+          >
+            <div style={{fontSize: '24px'}}>🔒</div>
+            <div style={{fontSize: '14px', color: '#666', marginBottom: '5px'}}>
+              Hidden Message
+            </div>
+            
+            <input 
+              type="password" 
+              placeholder="Enter Password"
+              style={styles.unlockInput}
+              value={inputPwd}
+              onChange={(e) => setInputPwd(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+            />
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              style={styles.unlockBtn}
+              onClick={handleUnlock}
+            >
+              Unlock
+            </motion.button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="unlocked"
+            initial={{ opacity: 0, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, filter: 'blur(0px)' }}
+            style={{ flex: 1 }}
+          >
+            <div style={styles.messageText}>
+              {post.text}
+            </div>
+            <div style={{ marginTop: '20px', fontSize: '12px', color: '#aaa', textAlign: 'right' }}>
+              Unlocked
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Expiry Progress Bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '4px', background: '#f5f5f5' }}>
+        <motion.div 
+          initial={{ width: '100%' }}
+          animate={{ width: '0%' }}
+          transition={{ duration: (post.expiry - post.postedAt) / 1000, ease: 'linear' }}
+          style={{ height: '100%', backgroundColor: isUnlocked ? '#4cd964' : '#ff3b30' }}
+        />
+      </div>
+    </motion.div>
+  );
+};
+
+// --- MAIN APP COMPONENT ---
+export default function App() {
+  const [posts, setPosts] = useState([]);
+  const [message, setMessage] = useState('');
+  const [duration, setDuration] = useState('5');
+  const [msgPassword, setMsgPassword] = useState(''); // Specific password for the new message
+  const [error, setError] = useState('');
+
+  // 1. Load posts
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('ghostBoardSecure')) || [];
+    setPosts(saved);
+  }, []);
+
+  // 2. Save and prune expired
+  useEffect(() => {
+    localStorage.setItem('ghostBoardSecure', JSON.stringify(posts));
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setPosts((current) => current.filter((p) => p.expiry > now));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [posts]);
+
+  // Force re-render for timers
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handlePost = () => {
+    setError('');
+    
+    if (!message.trim()) return setError("Please write a message.");
+    if (!msgPassword.trim()) return setError("Set a password so people can unlock this.");
+
+    const now = Date.now();
+    const expiry = now + parseInt(duration) * 60 * 1000;
+    const uniqueId = "msg_" + now + Math.random().toString(36).substr(2, 5);
+
+    const newPost = {
+      id: uniqueId,
+      text: message,
+      password: msgPassword, // Store the password to verify later
+      postedAt: now,
+      expiry: expiry,
+    };
+
+    setPosts([newPost, ...posts]);
+    setMessage('');
+    setMsgPassword('');
+  };
+
+  return (
     <div style={styles.container}>
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        style={styles.header}
       >
-        <h1 style={styles.title}>Ghost Board</h1>
-        <p style={styles.subtitle}>Post temporary messages. Password required.</p>
+        <h1 style={styles.title}>Secure Ghost Board</h1>
+        <p style={styles.subtitle}>Set a password. Only those who know it can read it.</p>
       </motion.div>
 
-      {/* INPUT AREA */}
+      {/* CREATION FORM */}
       <motion.div 
         style={styles.inputCard}
-        initial={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2 }}
       >
         <textarea
           style={styles.textarea}
-          placeholder="What's on your mind?"
+          placeholder="Write a secret message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
@@ -234,99 +359,44 @@ export default function App() {
             value={duration} 
             onChange={(e) => setDuration(e.target.value)}
           >
-            <option value="1">1 Minute</option>
-            <option value="5">5 Minutes</option>
-            <option value="60">1 Hour</option>
-            <option value="1440">24 Hours</option>
+            <option value="1">Expire: 1 Min</option>
+            <option value="5">Expire: 5 Mins</option>
+            <option value="60">Expire: 1 Hour</option>
+            <option value="1440">Expire: 24 Hours</option>
           </select>
 
           <input
-            type="password"
-            placeholder="Password"
-            style={styles.input}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="text" // Changed to text so they can see what they are setting
+            placeholder="Set Unlock Password"
+            style={{...styles.input, fontWeight: 'bold'}}
+            value={msgPassword}
+            onChange={(e) => setMsgPassword(e.target.value)}
           />
         </div>
 
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              style={styles.error}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && <div style={styles.error}>{error}</div>}
 
         <motion.button
-          style={styles.button}
-          whileHover={{ scale: 1.02, backgroundColor: '#333' }}
+          style={styles.mainButton}
+          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.95 }}
           onClick={handlePost}
         >
-          Post to Board
+          Lock & Post Message
         </motion.button>
       </motion.div>
 
-      {/* MESSAGE GRID */}
+      {/* FEED */}
       <motion.div style={styles.grid} layout>
         <AnimatePresence>
           {posts.map((post) => (
-            <motion.div
-              key={post.id}
-              style={styles.card}
-              layout
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ 
-                opacity: 0, 
-                scale: 0.5, 
-                transition: { duration: 0.3 } 
-              }}
-              whileHover={{ y: -5, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
-            >
-              <div style={styles.cardText}>
-                {post.text}
-              </div>
-              
-              <div style={styles.cardMeta}>
-                <span>{new Date(post.postedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                <motion.span 
-                  style={styles.badge}
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  {getRemainingTime(post.expiry)} left
-                </motion.span>
-              </div>
-              
-              {/* Optional Progress Bar */}
-              <div style={{ width: '100%', height: '4px', backgroundColor: '#f0f0f0', borderRadius: '2px', marginTop: '10px', overflow: 'hidden' }}>
-                <motion.div 
-                  initial={{ width: '100%' }}
-                  animate={{ width: '0%' }}
-                  transition={{ duration: (post.expiry - post.postedAt) / 1000, ease: 'linear' }}
-                  style={{ height: '100%', backgroundColor: '#ff4757' }}
-                />
-              </div>
-
-            </motion.div>
+            <MessageCard key={post.id} post={post} />
           ))}
         </AnimatePresence>
       </motion.div>
-      
+
       {posts.length === 0 && (
-        <motion.p 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 0.4 }} 
-          style={{ marginTop: '20px' }}
-        >
-          No active messages. Be the first to post.
-        </motion.p>
+        <p style={{ color: '#aaa', marginTop: '20px' }}>No hidden messages found.</p>
       )}
     </div>
   );
