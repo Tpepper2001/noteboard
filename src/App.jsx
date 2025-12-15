@@ -1,181 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from './supabaseClient'; // Import your connection
 
-// --- STYLES (CSS-in-JS) ---
+// --- STYLES (Same as before) ---
 const styles = {
   container: {
     minHeight: '100vh',
     padding: '40px 20px',
     backgroundColor: '#f0f2f5',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: '"Inter", sans-serif',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
   },
-  header: {
-    textAlign: 'center',
-    marginBottom: '40px',
-  },
-  title: {
-    fontSize: '2.5rem',
-    fontWeight: '800',
-    color: '#1a1a1a',
-    marginBottom: '8px',
-  },
-  subtitle: {
-    color: '#666',
-  },
-  // Form Area
+  header: { textAlign: 'center', marginBottom: '40px' },
+  title: { fontSize: '2.5rem', fontWeight: '800', color: '#1a1a1a', marginBottom: '8px' },
+  subtitle: { color: '#666' },
   inputCard: {
-    width: '100%',
-    maxWidth: '500px',
-    backgroundColor: '#ffffff',
-    borderRadius: '20px',
-    padding: '25px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-    marginBottom: '50px',
-    overflow: 'hidden',
+    width: '100%', maxWidth: '500px', backgroundColor: '#ffffff',
+    borderRadius: '20px', padding: '25px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+    marginBottom: '50px', overflow: 'hidden',
   },
   textarea: {
-    width: '100%',
-    minHeight: '100px',
-    border: 'none',
-    backgroundColor: '#f8f9fa',
-    borderRadius: '12px',
-    padding: '15px',
-    fontSize: '16px',
-    color: '#333',
-    resize: 'none',
-    outline: 'none',
-    marginBottom: '15px',
+    width: '100%', minHeight: '100px', border: 'none', backgroundColor: '#f8f9fa',
+    borderRadius: '12px', padding: '15px', fontSize: '16px', color: '#333',
+    resize: 'none', outline: 'none', marginBottom: '15px',
   },
-  controls: {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '15px',
-  },
-  input: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '10px',
-    border: '1px solid #eee',
-    backgroundColor: '#fff',
-    fontSize: '14px',
-    outline: 'none',
-  },
-  select: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '10px',
-    border: '1px solid #eee',
-    backgroundColor: '#fff',
-    fontSize: '14px',
-    outline: 'none',
-    cursor: 'pointer',
-  },
+  controls: { display: 'flex', gap: '10px', marginBottom: '15px' },
+  input: { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #eee', fontSize: '14px', outline: 'none' },
+  select: { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #eee', fontSize: '14px', outline: 'none', cursor: 'pointer' },
   mainButton: {
-    width: '100%',
-    padding: '14px',
-    backgroundColor: '#111',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
+    width: '100%', padding: '14px', backgroundColor: '#111', color: '#fff',
+    border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '600', cursor: 'pointer',
   },
-  error: {
-    color: '#ff4757',
-    fontSize: '13px',
-    marginBottom: '10px',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  // Grid Area
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '20px',
-    width: '100%',
-    maxWidth: '1000px',
-  },
-  // Card Component
+  error: { color: '#ff4757', fontSize: '13px', marginBottom: '10px', textAlign: 'center', fontWeight: '500' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', width: '100%', maxWidth: '1000px' },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '20px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    minHeight: '180px',
-    position: 'relative',
-    overflow: 'hidden',
+    backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column',
+    justifyContent: 'space-between', minHeight: '180px', position: 'relative', overflow: 'hidden',
   },
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px',
-    fontSize: '12px',
-    color: '#888',
-    fontFamily: 'monospace',
-  },
-  lockedContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    gap: '10px',
-    textAlign: 'center',
-  },
-  unlockInput: {
-    padding: '10px',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
-    width: '80%',
-    textAlign: 'center',
-    fontSize: '14px',
-  },
-  unlockBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#007aff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  messageText: {
-    fontSize: '16px',
-    lineHeight: '1.6',
-    color: '#333',
-    whiteSpace: 'pre-wrap',
-  },
-  badge: {
-    backgroundColor: '#f0f0f0',
-    padding: '4px 8px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: 'bold',
-    color: '#555',
-  }
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', fontSize: '12px', color: '#888', fontFamily: 'monospace' },
+  lockedContent: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '10px', textAlign: 'center' },
+  unlockInput: { padding: '10px', borderRadius: '8px', border: '1px solid #ddd', width: '80%', textAlign: 'center', fontSize: '14px' },
+  unlockBtn: { padding: '8px 16px', backgroundColor: '#007aff', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
+  messageText: { fontSize: '16px', lineHeight: '1.6', color: '#333', whiteSpace: 'pre-wrap' },
+  badge: { backgroundColor: '#f0f0f0', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', color: '#555' }
 };
 
 // --- SUB-COMPONENT: Message Card ---
-// We separate this so each card handles its own password input state
-const MessageCard = ({ post, onDelete }) => {
+const MessageCard = ({ post }) => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [inputPwd, setInputPwd] = useState("");
   const [shake, setShake] = useState(0);
 
   const handleUnlock = () => {
+    // Check against the password stored in Supabase
     if (inputPwd === post.password) {
       setIsUnlocked(true);
     } else {
-      // Trigger shake animation
       setShake(prev => prev + 1);
       setInputPwd("");
     }
@@ -196,13 +79,12 @@ const MessageCard = ({ post, onDelete }) => {
       animate={{ 
         opacity: 1, 
         scale: 1,
-        x: shake % 2 === 0 ? 0 : [0, -10, 10, -10, 10, 0] // Shake effect
+        x: shake % 2 === 0 ? 0 : [0, -10, 10, -10, 10, 0] 
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      {/* Header with ID and Timer */}
       <div style={styles.cardHeader}>
-        <span>ID: #{post.id.slice(-6)}</span>
+        <span>ID: #{post.id}</span>
         <motion.span 
           style={styles.badge}
           animate={{ opacity: [0.6, 1, 0.6] }}
@@ -250,9 +132,7 @@ const MessageCard = ({ post, onDelete }) => {
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             style={{ flex: 1 }}
           >
-            <div style={styles.messageText}>
-              {post.text}
-            </div>
+            <div style={styles.messageText}>{post.text}</div>
             <div style={{ marginTop: '20px', fontSize: '12px', color: '#aaa', textAlign: 'right' }}>
               Unlocked
             </div>
@@ -260,12 +140,11 @@ const MessageCard = ({ post, onDelete }) => {
         )}
       </AnimatePresence>
 
-      {/* Expiry Progress Bar */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '4px', background: '#f5f5f5' }}>
         <motion.div 
           initial={{ width: '100%' }}
           animate={{ width: '0%' }}
-          transition={{ duration: (post.expiry - post.postedAt) / 1000, ease: 'linear' }}
+          transition={{ duration: (post.expiry - post.posted_at) / 1000, ease: 'linear' }}
           style={{ height: '100%', backgroundColor: isUnlocked ? '#4cd964' : '#ff3b30' }}
         />
       </div>
@@ -278,35 +157,61 @@ export default function App() {
   const [posts, setPosts] = useState([]);
   const [message, setMessage] = useState('');
   const [duration, setDuration] = useState('5');
-  const [msgPassword, setMsgPassword] = useState(''); // Specific password for the new message
+  const [msgPassword, setMsgPassword] = useState('');
   const [error, setError] = useState('');
 
-  // 1. Load posts
+  // 1. Fetch initial posts from Supabase
+  const fetchPosts = async () => {
+    const now = Date.now();
+    
+    // Get posts that haven't expired yet
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*')
+      .gt('expiry', now) // Only fetch valid posts
+      .order('posted_at', { ascending: false });
+
+    if (error) console.error('Error fetching:', error);
+    else setPosts(data || []);
+  };
+
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('ghostBoardSecure')) || [];
-    setPosts(saved);
+    fetchPosts();
+
+    // 2. Set up Realtime Subscription
+    // This makes the board update instantly when someone else posts
+    const channel = supabase
+      .channel('public:posts')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+        // Add new post to top of list if it hasn't expired
+        if(payload.new.expiry > Date.now()) {
+          setPosts(prev => [payload.new, ...prev]);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  // 2. Save and prune expired
+  // 3. Local expiry cleanup (Visual only)
   useEffect(() => {
-    localStorage.setItem('ghostBoardSecure', JSON.stringify(posts));
-
     const interval = setInterval(() => {
       const now = Date.now();
       setPosts((current) => current.filter((p) => p.expiry > now));
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [posts]);
+  }, []);
 
-  // Force re-render for timers
+  // Force timer tick
   const [, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const handlePost = () => {
+  const handlePost = async () => {
     setError('');
     
     if (!message.trim()) return setError("Please write a message.");
@@ -314,19 +219,27 @@ export default function App() {
 
     const now = Date.now();
     const expiry = now + parseInt(duration) * 60 * 1000;
-    const uniqueId = "msg_" + now + Math.random().toString(36).substr(2, 5);
 
-    const newPost = {
-      id: uniqueId,
-      text: message,
-      password: msgPassword, // Store the password to verify later
-      postedAt: now,
-      expiry: expiry,
-    };
+    // Send to Supabase
+    const { error } = await supabase
+      .from('posts')
+      .insert([
+        { 
+          text: message, 
+          password: msgPassword, 
+          posted_at: now, 
+          expiry: expiry 
+        }
+      ]);
 
-    setPosts([newPost, ...posts]);
-    setMessage('');
-    setMsgPassword('');
+    if (error) {
+      setError("Failed to post message. Try again.");
+      console.error(error);
+    } else {
+      // Success
+      setMessage('');
+      setMsgPassword('');
+    }
   };
 
   return (
@@ -337,10 +250,10 @@ export default function App() {
         style={styles.header}
       >
         <h1 style={styles.title}>Secure Ghost Board</h1>
-        <p style={styles.subtitle}>Set a password. Only those who know it can read it.</p>
+        <p style={styles.subtitle}>Synced Live via Supabase.</p>
       </motion.div>
 
-      {/* CREATION FORM */}
+      {/* INPUT FORM */}
       <motion.div 
         style={styles.inputCard}
         initial={{ scale: 0.95, opacity: 0 }}
@@ -354,11 +267,7 @@ export default function App() {
         />
         
         <div style={styles.controls}>
-          <select 
-            style={styles.select} 
-            value={duration} 
-            onChange={(e) => setDuration(e.target.value)}
-          >
+          <select style={styles.select} value={duration} onChange={(e) => setDuration(e.target.value)}>
             <option value="1">Expire: 1 Min</option>
             <option value="5">Expire: 5 Mins</option>
             <option value="60">Expire: 1 Hour</option>
@@ -366,7 +275,7 @@ export default function App() {
           </select>
 
           <input
-            type="text" // Changed to text so they can see what they are setting
+            type="text"
             placeholder="Set Unlock Password"
             style={{...styles.input, fontWeight: 'bold'}}
             value={msgPassword}
@@ -386,7 +295,7 @@ export default function App() {
         </motion.button>
       </motion.div>
 
-      {/* FEED */}
+      {/* MESSAGE GRID */}
       <motion.div style={styles.grid} layout>
         <AnimatePresence>
           {posts.map((post) => (
